@@ -1,0 +1,46 @@
+# Import necessary libraries
+from dronekit import connect, VehicleMode, LocationGlobalRelative
+import time
+
+# Connect to the vehicle (simulation)
+vehicle = connect('tcp:127.0.0.1:5760', wait_ready=True)
+
+# Set the target location coordinates (input from user)
+target_lat = float(input("Enter the target latitude: "))
+target_lon = float(input("Enter the target longitude: "))
+target_alt = float(input("Enter the target altitude: "))
+
+# Create a target location object
+target_location = LocationGlobalRelative(target_lat, target_lon, target_alt)
+
+# Arm and takeoff the vehicle
+vehicle.mode = VehicleMode("GUIDED")
+vehicle.armed = True
+vehicle.simple_takeoff(target_alt)
+
+# Wait until the vehicle reaches the target altitude
+while True:
+    current_alt = vehicle.location.global_relative_frame.alt
+    if current_alt >= target_alt * 0.95:
+        break
+    time.sleep(1)
+
+# Move the vehicle to the target location
+vehicle.simple_goto(target_location)
+
+# Wait until the vehicle reaches the target location
+while True:
+    current_location = vehicle.location.global_relative_frame
+    distance = current_location.distance_to(target_location)
+    if distance <= 1:
+        break
+    time.sleep(1)
+
+# Land the vehicle and disarm it
+vehicle.mode = VehicleMode("LAND")
+time.sleep(5)
+vehicle.armed = False
+
+# Close the connection to the vehicle
+vehicle.close()
+
